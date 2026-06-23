@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ClasseBook</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="bg-shapes"><span class="shape s1"></span><span class="shape s2"></span><span class="shape s3"></span></div>
+
+  <header class="top-bar">
+    <span class="logo">📚 ClasseBook</span>
+    <div class="top-right">
+      <button type="button" class="btn-menu" id="btn-menu" title="Menu">☰</button>
+      <div id="auth-guest" class="auth-row">
+        <button type="button" class="btn-sm" id="btn-join">Rejoindre</button>
+      </div>
+      <div id="auth-user" class="auth-row hidden">
+        <span id="user-badge"></span>
+        <button type="button" class="btn-sm btn-ghost" id="btn-logout">Quitter</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="hero">
+    <h1 contenteditable="true" id="class-title">Notre classe</h1>
+    <p class="hero-sub">Messages, photos, sondages & fin d'année</p>
+    <div class="countdown-mini" id="countdown-mini">🎓 Fin d'année : <strong id="days-left">—</strong> jours</div>
+  </div>
+
+  <nav class="tabs">
+    <button type="button" class="tab active" data-tab="feed">💬 Feed</button>
+    <button type="button" class="tab" data-tab="photos">📸 Photos</button>
+    <button type="button" class="tab" data-tab="polls">🗳️ Sondages</button>
+    <button type="button" class="tab" data-tab="fin">🎓 Fin d'année</button>
+  </nav>
+
+  <main class="wrap">
+
+    <!-- FEED = livre + mur -->
+    <section id="tab-feed" class="panel active">
+      <form id="feed-form" class="card form-card">
+        <select id="feed-type">
+          <option value="msg">Message livre d'or</option>
+          <option value="mur">Mur scolaire</option>
+        </select>
+        <input type="text" id="feed-target" class="hidden" placeholder="Prof / élève / sujet…" maxlength="50">
+        <textarea id="feed-text" rows="3" placeholder="Ton message…" maxlength="280"></textarea>
+        <div class="row">
+          <button type="button" class="btn-emoji" data-target="feed-text">😀 Emojis</button>
+          <button type="submit" class="btn-main">Publier</button>
+        </div>
+      </form>
+      <div id="feed-list" class="feed-list"></div>
+      <p id="feed-empty" class="empty">Rien pour l'instant…</p>
+    </section>
+
+    <!-- PHOTOS -->
+    <section id="tab-photos" class="panel">
+      <form id="photo-form-card" class="card form-card hidden">
+        <input type="file" id="photo-file" accept="image/*" hidden>
+        <button type="button" class="btn-upload" id="photo-pick">📷 Choisir une photo</button>
+        <img id="photo-prev" class="photo-prev hidden" alt="">
+        <textarea id="photo-cap" rows="2" placeholder="Description…" maxlength="200"></textarea>
+        <button type="submit" class="btn-main">Publier</button>
+      </form>
+      <p id="photo-login-hint" class="hint">Connecte-toi pour poster une photo</p>
+      <div id="photo-list" class="photo-list"></div>
+    </section>
+
+    <!-- SONDAGES -->
+    <section id="tab-polls" class="panel">
+      <form id="poll-create" class="card form-card">
+        <p class="hint">Crée ton sondage (tout le monde peut !)</p>
+        <input type="text" id="poll-title" placeholder="Question du sondage…" maxlength="80" required>
+        <button type="submit" class="btn-main">+ Ajouter sondage</button>
+      </form>
+      <div id="poll-list"></div>
+    </section>
+
+    <!-- FIN D'ANNÉE -->
+    <section id="tab-fin" class="panel">
+      <div class="card countdown-box">
+        <h2>🎓 Compte à rebours</h2>
+        <div class="countdown-big" id="countdown-big">—</div>
+        <p class="hint" id="end-date-label"></p>
+      </div>
+      <form id="moment-form" class="card form-card">
+        <p class="hint">Ajoute un moment à compter (sortie, examens…)</p>
+        <input type="text" id="moment-title" placeholder="Ex : Sortie zoo" maxlength="60" required>
+        <input type="date" id="moment-date" required>
+        <button type="submit" class="btn-main">Ajouter</button>
+      </form>
+      <ul id="moment-list" class="moment-list"></ul>
+
+      <aside class="card ego-card">
+        <p>💅 Site codé par <strong>moi</strong>. Oui, <em>moi</em>.</p>
+        <p class="ego-sub">Le cerveau de la classe. Si ça bug, c'est probablement ton navigateur. (Je dis ça, je dis rien.)</p>
+      </aside>
+    </section>
+  </main>
+
+  <footer class="footer">ClasseBook · données locales · pas de serveur (pour l'instant)</footer>
+
+  <!-- Menu latéral -->
+  <div id="side-menu" class="side-menu hidden">
+    <div class="side-back" data-close></div>
+    <div class="side-box">
+      <button type="button" class="side-close" data-close>×</button>
+      <h3>Menu</h3>
+      <div id="menu-user-info" class="menu-info"></div>
+      <hr>
+      <div id="menu-admin" class="hidden">
+        <p class="menu-label">👑 Admin</p>
+        <label>Date fin d'année</label>
+        <input type="date" id="admin-end-date">
+        <button type="button" class="btn-main btn-block" id="admin-save-date">Sauver date</button>
+        <button type="button" class="btn-sm btn-block" id="admin-add-poll">+ Sondage officiel</button>
+        <input type="text" id="admin-poll-title" placeholder="Titre sondage admin" class="hidden">
+      </div>
+      <p class="hint menu-hint">Les comptes sont liés à ton appareil — pas de faux pseudo possible (enfin on essaie).</p>
+    </div>
+  </div>
+
+  <!-- Modal compte -->
+  <div id="auth-modal" class="modal hidden">
+    <div class="modal-back" data-close></div>
+    <div class="modal-box">
+      <button type="button" class="side-close" data-close>×</button>
+      <h3>Rejoindre ClasseBook</h3>
+      <p class="hint">Pas de mot de passe — ton compte = ton appareil</p>
+      <form id="auth-form">
+        <input type="text" id="auth-name" placeholder="Ton pseudo" maxlength="25" required>
+        <p class="label-sm">Avatar</p>
+        <div id="avatar-pick" class="avatar-pick"></div>
+        <p class="device-preview" id="device-preview"></p>
+        <button type="submit" class="btn-main">C'est parti</button>
+      </form>
+      <p id="auth-err" class="err hidden"></p>
+    </div>
+  </div>
+
+  <!-- Panneau emojis -->
+  <div id="emoji-panel" class="emoji-panel hidden">
+    <div class="emoji-head">
+      <span>Réactions & emojis</span>
+      <button type="button" id="emoji-close">×</button>
+    </div>
+    <input type="text" id="emoji-custom" placeholder="Ton emoji perso (1 car.)" maxlength="2">
+    <div id="emoji-grid" class="emoji-grid"></div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
