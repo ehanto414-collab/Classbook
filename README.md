@@ -1,24 +1,43 @@
-# ClasseBook
+ClasseBook — persistance Firestore + Storage
 
-Mini réseau social de classe (HTML/CSS/JS, données locales).
+Ce que j'ai ajouté
+- firebase-utils.js : initialisation Firebase, fonctions : setState, getStateOnce, listenState, uploadImage.
+- app.js (branche feature/db) : utilise Storage pour uploader les images et Firestore pour stocker l'état global.
+- Modif index.html : chargement du script en tant que module (type="module").
+- firestore.rules / storage.rules : exemples de règles (actuellement permissives pour tests).
 
-## Utilisation
+Étapes rapides pour tester localement
+1) Récupère la branche :
+   git fetch origin
+   git checkout feature/db
 
-1. Ouvre `index.html` dans le navigateur
-2. **Rejoindre** → pseudo + avatar (pas de mot de passe)
-3. Le compte est lié à **ton appareil** (visible sur chaque post)
+2) Ouvre un serveur local (optionnel mais recommandé) :
+   python -m http.server 8000
+   puis ouvre http://localhost:8000
 
-## Sections
+3) Utilise la console Firebase (https://console.firebase.google.com) -> Firestore / Storage pour voir les données et images uploadées.
 
-- **Feed** : messages livre d'or + mur scolaire
-- **Photos** : posts avec réactions et commentaires
-- **Sondages** : votes officiels + sondages créés par les élèves
-- **Fin d'année** : compte à rebours + moments ajoutés par tous
+Sécurité — important
+- Les règles dans firestore.rules et storage.rules sont permissives pour faciliter les tests. NE PAS LES LAISSER AINSI EN PRODUCTION.
+- Recommandation : activer Firebase Authentication (anonyme ou par provider), puis modifier les règles pour n'autoriser les écritures qu'aux utilisateurs authentifiés ou aux appareils enregistrés.
 
-## Admin
+Règles exemples à durcir (suggestion rapide)
+- Firestore : n'autoriser les écritures que si le document comporte un champ ownerDeviceId égal à request.auth.token.deviceId (ou si request.auth != null).
+- Storage : autoriser l'écriture seulement à des utilisateurs authentifiés.
 
-Le **premier compte** créé est admin. Menu ☰ → changer la date de fin d'année, ajouter sondages officiels.
+Déploiement sur GitHub Pages (rapide)
+1) La page est statique — GitHub Pages peut servir `index.html` depuis la branche `main` ou `gh-pages`.
+2) Si tu veux déployer depuis `main` :
+   - Paramètres du repo -> Pages -> Source -> Branch: main / root
+   - Ou : créer une action qui build/publie sur gh-pages si besoin.
 
-## Réactions
+Je peux automatiser le déploiement :
+- Option A (rapide) : créer un workflow GitHub Action qui déploie la branche feature/db vers la branche gh-pages à chaque push.
+- Option B : te guider pour activer Pages depuis la branche `main`.
 
-👍 👎 ❤️ 😂 😡 🔥 + emoji perso sur posts et commentaires.
+Dis-moi ce que tu veux maintenant :
+- Je pousse une PR depuis feature/db vers main (avec description + checklist) ? Réponds "OK PR".
+- Je crée un workflow GitHub Action pour déployer automatiquement sur gh-pages ? Réponds "OK deploy action".
+- Tu veux que je verrouille les règles Firestore/Storage et active l'auth (anonyme) automatiquement ? Réponds "Sécuriser maintenant".
+
+Je peux faire plusieurs choses enchaînées si tu veux — dis simplement les étapes (par ex. "OK PR, deploy action, Sécuriser maintenant").

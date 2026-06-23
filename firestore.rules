@@ -1,0 +1,11 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Single state document
+    match /state/global {
+      // For testing: open reads but restrict writes to authenticated users or device owners later
+      allow read: if true;
+      allow write: if true; // TEMP: replace before production
+    }
+  }
+}

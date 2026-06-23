@@ -1,21 +1,6 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-import { getFirestore } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { setState, listenState, uploadImage, getStateOnce } from './firebase-utils.js';
 
-const app = initializeApp(firebaseConfig);
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
-const firebaseConfig = {
-  apiKey: "AIzaSyDBkDj1xUWRE59snEQvXJwXEY-EeXJFDgk",
-  authDomain: "classebook-f48fb.firebaseapp.com",
-  projectId: "classebook-f48fb",
-  storageBucket: "classebook-f48fb.firebasestorage.app",
-  messagingSenderId: "903186398608",
-  appId: "1:903186398608:web:8324ffedcbbc2837de4715",
-  measurementId: "G-3SWPZ4XSB6"
-};
-const db = getFirestore(app);
-
-// ClasseBook - app principale
-// ca devrait marcher je crois
+// ClasseBook - app principale (module)
 
 (function () {
   var K = {
@@ -62,6 +47,8 @@ const db = getFirestore(app);
   var emojiTarget = null; // input id ou {type, id}
   var emojiMode = "text"; // text | react | comment-react
   var photoData = null;
+
+  var applyingRemote = false; // prevent sync loops
 
   // --- storage basique ---
   function load(key, def) {
@@ -128,7 +115,7 @@ const db = getFirestore(app);
     }
   }
 
-  function saveAll() {
+  async function saveAll() {
     save(K.users, users);
     save(K.feed, feed);
     save(K.photos, photos);
@@ -138,6 +125,18 @@ const db = getFirestore(app);
     save(K.settings, settings);
     if (me) save(K.session, me);
     else localStorage.removeItem(K.session);
+
+    // also push to Firestore (single doc state) unless we are applying remote
+    if (!applyingRemote) {
+      try {
+        // fire-and-forget
+        setState({ users, feed, photos, polls, voteData, moments, settings }).catch(function (e) {
+          console.warn('Failed to sync to Firestore', e);
+        });
+      } catch (e) {
+        console.warn('setState threw', e);
+      }
+    }
   }
 
   // --- auth sans mdp ---
@@ -603,7 +602,7 @@ const db = getFirestore(app);
     reader.readAsDataURL(file);
   };
 
-  document.getElementById("photo-form-card").onsubmit = function (e) {
+  document.getElementById("photo-form-card").onsubmit = async function (e) {
     e.preventDefault();
     if (!needLogin()) return;
     if (!photoData) {
@@ -611,13 +610,21 @@ const db = getFirestore(app);
       return;
     }
     var u = users.find(function (x) { return x.id == me.id; });
+    var photoId = id();
+    try {
+      // upload to Firebase Storage and get a URL
+      var imageUrl = await uploadImage(photoData, photoId + '.jpg');
+    } catch (err) {
+      alert('Échec de l\'upload de l\'image, sauvegarde en local only.');
+      var imageUrl = photoData; // fallback to dataURL
+    }
     photos.push({
-      id: id(),
+      id: photoId,
       userId: me.id,
       name: me.name,
       avatar: me.avatar,
       deviceLabel: u ? u.deviceLabel : getDeviceLabel(),
-      image: photoData,
+      image: imageUrl,
       caption: document.getElementById("photo-cap").value.trim(),
       reactions: {},
       comments: [],
@@ -626,7 +633,7 @@ const db = getFirestore(app);
     photoData = null;
     document.getElementById("photo-prev").classList.add("hidden");
     document.getElementById("photo-cap").value = "";
-    saveAll();
+    await saveAll();
     renderPhotos();
   };
 
@@ -772,8 +779,42 @@ const db = getFirestore(app);
     localStorage.setItem(K.title, titleEl.textContent.trim() || "Notre classe");
   };
 
+  // --- realtime sync init ---
+  function applyRemoteState(s) {
+    if (!s) return;
+    applyingRemote = true;
+    users = s.users || users;
+    feed = s.feed || feed;
+    photos = s.photos || photos;
+    polls = s.polls || polls;
+    voteData = s.voteData || voteData;
+    moments = s.moments || moments;
+    settings = s.settings || settings;
+    // persist locally but do not re-push to Firestore
+    save(K.users, users);
+    save(K.feed, feed);
+    save(K.photos, photos);
+    save(K.polls, polls);
+    save(K.votes, voteData);
+    save(K.moments, moments);
+    save(K.settings, settings);
+    applyingRemote = false;
+    renderAuth(); renderMenuInfo(); renderFeed(); renderPhotos(); renderPolls(); updateCountdown(); renderMoments();
+  }
+
+  // start listening (if possible)
+  try {
+    listenState(function (s) {
+      applyRemoteState(s);
+    });
+    // also try to fetch once at startup
+    getStateOnce().then(s => { if (s) applyRemoteState(s); });
+  } catch (e) {
+    console.warn('Realtime disabled', e);
+  }
+
   // --- init ---
-  console.log("ClasseBook loaded ok"); // oups débutant
+  console.log("ClasseBook loaded ok");
   loadAll();
   initAvatars();
   initEmojiGrid();
