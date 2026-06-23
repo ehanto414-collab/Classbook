@@ -1,0 +1,6 @@
+Liste de contrôle :
+
+ Vérifier que index.html est à la racine
+ Vérifier que l’action « Deploy to GitHub Pages » s’exécute après la fusion
+ Configurer Settings → Pages pour utiliser la branche gh-pages si nécessaire
+ Tester le site public (création de compte, upload image)
