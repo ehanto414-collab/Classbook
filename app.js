@@ -1,18 +1,4 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-import { getFirestore } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-
-const firebaseConfig = {
-  apiKey: "AIzaSyDBkDj1xUWRE59snEQvXJwXEY-EeXJFDgk",
-  authDomain: "classebook-f48fb.firebaseapp.com",
-  projectId: "classebook-f48fb",
-  storageBucket: "classebook-f48fb.firebasestorage.app",
-  messagingSenderId: "903186398608",
-  appId: "1:903186398608:web:8324ffedcbbc2837de4715",
-  measurementId: "G-3SWPZ4XSB6"
-};
-
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
+import { setState, listenState } from './firebase-utils.js';
 
 // ClasseBook - app principale
 // ca devrait marcher je crois
@@ -62,6 +48,8 @@ const db = getFirestore(app);
   var emojiTarget = null; // input id ou {type, id}
   var emojiMode = "text"; // text | react | comment-react
   var photoData = null;
+
+  var applyingRemote = false; // prevent sync loops
 
   // --- storage basique ---
   function load(key, def) {
@@ -128,7 +116,7 @@ const db = getFirestore(app);
     }
   }
 
-  function saveAll() {
+  async function saveAll() {
     save(K.users, users);
     save(K.feed, feed);
     save(K.photos, photos);
@@ -138,6 +126,18 @@ const db = getFirestore(app);
     save(K.settings, settings);
     if (me) save(K.session, me);
     else localStorage.removeItem(K.session);
+
+    // also push to Firestore (single doc state) unless we are applying remote
+    if (!applyingRemote) {
+      try {
+        // fire-and-forget
+        setState({ users, feed, photos, polls, voteData, moments, settings }).catch(function (e) {
+          console.warn('Failed to sync to Firestore', e);
+        });
+      } catch (e) {
+        console.warn('setState threw', e);
+      }
+    }
   }
 
   // --- auth sans mdp ---
@@ -752,35 +752,4 @@ const db = getFirestore(app);
       if (isAdmin(me) || (me && m.by == me.name)) {
         var del = document.createElement("button");
         del.className = "del-btn";
-        del.textContent = "×";
-        del.onclick = function () {
-          moments = moments.filter(function (x) { return x.id != m.id; });
-          saveAll();
-          renderMoments();
-        };
-        li.appendChild(del);
-      }
-      ul.appendChild(li);
-    });
-  }
-
-  // --- title ---
-  var titleEl = document.getElementById("class-title");
-  var savedTitle = localStorage.getItem(K.title);
-  if (savedTitle) titleEl.textContent = savedTitle;
-  titleEl.onblur = function () {
-    localStorage.setItem(K.title, titleEl.textContent.trim() || "Notre classe");
-  };
-
-  // --- init ---
-  console.log("ClasseBook loaded ok"); // oups débutant
-  loadAll();
-  initAvatars();
-  initEmojiGrid();
-  renderAuth();
-  renderFeed();
-  renderPhotos();
-  renderPolls();
-  updateCountdown();
-  renderMoments();
-})();
+        del.textContent = "�×";
