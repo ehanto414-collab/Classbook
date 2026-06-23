@@ -1,7 +1,6 @@
-import { setState, listenState } from './firebase-utils.js';
+import { setState, listenState, uploadImage, getStateOnce } from './firebase-utils.js';
 
-// ClasseBook - app principale
-// ca devrait marcher je crois
+// ClasseBook - app principale (module)
 
 (function () {
   var K = {
@@ -603,7 +602,7 @@ import { setState, listenState } from './firebase-utils.js';
     reader.readAsDataURL(file);
   };
 
-  document.getElementById("photo-form-card").onsubmit = function (e) {
+  document.getElementById("photo-form-card").onsubmit = async function (e) {
     e.preventDefault();
     if (!needLogin()) return;
     if (!photoData) {
@@ -611,13 +610,21 @@ import { setState, listenState } from './firebase-utils.js';
       return;
     }
     var u = users.find(function (x) { return x.id == me.id; });
+    var photoId = id();
+    try {
+      // upload to Firebase Storage and get a URL
+      var imageUrl = await uploadImage(photoData, photoId + '.jpg');
+    } catch (err) {
+      alert('Échec de l\'upload de l\'image, sauvegarde en local only.');
+      var imageUrl = photoData; // fallback to dataURL
+    }
     photos.push({
-      id: id(),
+      id: photoId,
       userId: me.id,
       name: me.name,
       avatar: me.avatar,
       deviceLabel: u ? u.deviceLabel : getDeviceLabel(),
-      image: photoData,
+      image: imageUrl,
       caption: document.getElementById("photo-cap").value.trim(),
       reactions: {},
       comments: [],
@@ -626,7 +633,7 @@ import { setState, listenState } from './firebase-utils.js';
     photoData = null;
     document.getElementById("photo-prev").classList.add("hidden");
     document.getElementById("photo-cap").value = "";
-    saveAll();
+    await saveAll();
     renderPhotos();
   };
 
@@ -752,4 +759,69 @@ import { setState, listenState } from './firebase-utils.js';
       if (isAdmin(me) || (me && m.by == me.name)) {
         var del = document.createElement("button");
         del.className = "del-btn";
-        del.textContent = "�×";
+        del.textContent = "×";
+        del.onclick = function () {
+          moments = moments.filter(function (x) { return x.id != m.id; });
+          saveAll();
+          renderMoments();
+        };
+        li.appendChild(del);
+      }
+      ul.appendChild(li);
+    });
+  }
+
+  // --- title ---
+  var titleEl = document.getElementById("class-title");
+  var savedTitle = localStorage.getItem(K.title);
+  if (savedTitle) titleEl.textContent = savedTitle;
+  titleEl.onblur = function () {
+    localStorage.setItem(K.title, titleEl.textContent.trim() || "Notre classe");
+  };
+
+  // --- realtime sync init ---
+  function applyRemoteState(s) {
+    if (!s) return;
+    applyingRemote = true;
+    users = s.users || users;
+    feed = s.feed || feed;
+    photos = s.photos || photos;
+    polls = s.polls || polls;
+    voteData = s.voteData || voteData;
+    moments = s.moments || moments;
+    settings = s.settings || settings;
+    // persist locally but do not re-push to Firestore
+    save(K.users, users);
+    save(K.feed, feed);
+    save(K.photos, photos);
+    save(K.polls, polls);
+    save(K.votes, voteData);
+    save(K.moments, moments);
+    save(K.settings, settings);
+    applyingRemote = false;
+    renderAuth(); renderMenuInfo(); renderFeed(); renderPhotos(); renderPolls(); updateCountdown(); renderMoments();
+  }
+
+  // start listening (if possible)
+  try {
+    listenState(function (s) {
+      applyRemoteState(s);
+    });
+    // also try to fetch once at startup
+    getStateOnce().then(s => { if (s) applyRemoteState(s); });
+  } catch (e) {
+    console.warn('Realtime disabled', e);
+  }
+
+  // --- init ---
+  console.log("ClasseBook loaded ok");
+  loadAll();
+  initAvatars();
+  initEmojiGrid();
+  renderAuth();
+  renderFeed();
+  renderPhotos();
+  renderPolls();
+  updateCountdown();
+  renderMoments();
+})();
