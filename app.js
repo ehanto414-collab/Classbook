@@ -1,3 +1,19 @@
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+import { getFirestore } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+const app = initializeApp(firebaseConfig);
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
+  apiKey: "AIzaSyDBkDj1xUWRE59snEQvXJwXEY-EeXJFDgk",
+  authDomain: "classebook-f48fb.firebaseapp.com",
+  projectId: "classebook-f48fb",
+  storageBucket: "classebook-f48fb.firebasestorage.app",
+  messagingSenderId: "903186398608",
+  appId: "1:903186398608:web:8324ffedcbbc2837de4715",
+  measurementId: "G-3SWPZ4XSB6"
+};
+const db = getFirestore(app);
+
 // ClasseBook - app principale
 // ca devrait marcher je crois
 
