@@ -1,0 +1,3 @@
+nom : Déploiement sur GitHub Pages Sur : Push : Branches : - Principal
+
+Emplois : Déployer : Fonctionne-CONTINU : Ubuntu-Latest Étapes : - utilisations : actions/checkout@v4 avec : Persist-credentials : faux - nom : Déploiement vers gh-pages Utilisations : PeaceIris/Actions-GH-pages@v3 avec : github_token : ${{ secrets. GITHUB_TOKEN }} publish_dir : ./ publish_branch : gh-pages
